@@ -213,6 +213,8 @@ exports.crop = function(options, callback) {
   if(!options.dstPath) throw new Error("No dstPath defined!")
   if(!options.height && !options.width) throw new Error("No width or height defined!")
 
+  var gravity = options.gravity || "Center"
+  
   exports.identify(options.srcPath, function(err, meta) {
     if(err) throw new Error(err.message)
 
@@ -234,7 +236,7 @@ exports.crop = function(options, callback) {
         args.push("-resize")
         args.push(resizeTo)
         args.push("-gravity")
-        args.push("Center")
+        args.push(gravity)
         args.push("-crop")
         args.push(t.opt.width.toString() + "x" + t.opt.height.toString() + "+0+0")
         args.push("+repage")
