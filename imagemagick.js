@@ -293,7 +293,7 @@ exports.resizeArgs = function(options) {
   
   var source = opt.srcPath.split(".")
 
-  if (source[source.length - 1].match(/psd/i)) {
+  if (source[source.length - 1].match(/psd/i) || source[source.length - 1].match(/pdf/i)) {
     var args = [opt.srcPath+'[0]'];
   }
   else {
