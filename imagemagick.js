@@ -92,13 +92,15 @@ exports.identify = function(pathOrArgs, callback) {
       if (isCustom) {
         result = stdout;
       } else {
+
         var v = stdout.split(/ +/),
-            x = v[2].split(/x/);
+            x = v[3].split(/x/);
+        console.log("im identify output", v, x)
         result = {
           format: v[1],
           width: parseInt(x[0]),
           height: parseInt(x[1]),
-          depth: parseInt(v[4]),
+          depth: parseInt(v[5]),
         };
       }
     }
@@ -266,7 +268,8 @@ exports.resizeArgs = function(options) {
     filter: 'Lagrange',
     sharpening: 0.2,
     customArgs: [],
-    timeout: 0
+    timeout: 0,
+    only_shrink: true
   }
 
   // check options
@@ -287,7 +290,16 @@ exports.resizeArgs = function(options) {
     throw new Error('both width and height can not be 0 (zero)');
 
   // build args
-  var args = [opt.srcPath];
+  
+  var source = opt.srcPath.split(".")
+
+  if (source[source.length - 1].match(/psd/i)) {
+    var args = [opt.srcPath+'[0]'];
+  }
+  else {
+    var args = [opt.srcPath];
+  }
+
   if (opt.sharpening > 0) {
     args = args.concat([
       '-set', 'option:filter:blur', String(1.0-opt.sharpening)]);
@@ -303,7 +315,13 @@ exports.resizeArgs = function(options) {
     if (opt.height === 0) opt.height = opt.width;
     else if (opt.width === 0) opt.width = opt.height;
     args.push('-resize');
-    args.push(String(opt.width)+'x'+String(opt.height));
+    if (opt.only_shrink) {
+      args.push(String(opt.width)+'x'+String(opt.height)+"\>");
+    }
+    else {
+      args.push(String(opt.width)+'x'+String(opt.height));
+    }
+    
   }
   opt.format = opt.format.toLowerCase();
   var isJPEG = (opt.format === 'jpg' || opt.format === 'jpeg');
