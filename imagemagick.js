@@ -3,10 +3,10 @@ var sys = require('sys'),
 
 
 function exec2(file, args /*, options, callback */) {
-  var options = { encoding: 'utf8'
-                , timeout: 0
-                , maxBuffer: 500*1024
-                , killSignal: 'SIGKILL'
+  var options = { encoding: 'utf8',
+                  timeout: 0,
+                  maxBuffer: 500*1024,
+                  killSignal: 'SIGKILL'
                 };
 
   var callback = arguments[arguments.length-1];
@@ -52,7 +52,7 @@ function exec2(file, args /*, options, callback */) {
     stderr += chunk;
     if (!killed && stderr.length > options.maxBuffer) {
       child.kill(options.killSignal);
-      killed = true
+      killed = true;
     }
   });
 
@@ -71,7 +71,7 @@ function exec2(file, args /*, options, callback */) {
   });
   
   return child;
-};
+}
 
 
 exports.identify = function(pathOrArgs, callback) {
@@ -95,12 +95,12 @@ exports.identify = function(pathOrArgs, callback) {
 
         var v = stdout.split(/ +/),
             x = v[3].split(/x/);
-        console.log("im identify output", v, x)
+        // console.log("im identify output", v, x);
         result = {
           format: v[1],
-          width: parseInt(x[0]),
-          height: parseInt(x[1]),
-          depth: parseInt(v[5]),
+          width: parseInt(x[0], 10),
+          height: parseInt(x[1], 10),
+          depth: parseInt(v[5], 10)
         };
       }
     }
@@ -112,7 +112,7 @@ exports.identify = function(pathOrArgs, callback) {
     proc.stdin.end();
   }
   return proc;
-}
+};
 exports.identify.path = 'identify';
 
 function ExifDate(value) {
@@ -143,7 +143,6 @@ var exifFieldConverters = {
   subSecTimeDigitized:Number, subSecTimeOriginal:Number, customRendered:Number,
   exposureMode:Number, focalLengthIn35mmFilm:Number, gainControl:Number,
   saturation:Number, sharpness:Number, subjectDistanceRange:Number,
-  subSecTime:Number, subSecTimeDigitized:Number, subSecTimeOriginal:Number,
   whiteBalance:Number, sceneCaptureType:Number,
   
   // Dates
@@ -172,11 +171,11 @@ exports.readMetadata = function(path, callback) {
         }
         if (!(typekey in meta)) meta[typekey] = {key:value};
         else meta[typekey][key] = value;
-      })
+      });
     }
     callback(err, meta);
   });
-}
+};
 
 exports.convert = function(args, timeout, callback) {
   var procopt = {encoding: 'binary'};
@@ -186,15 +185,15 @@ exports.convert = function(args, timeout, callback) {
   } else if (typeof timeout !== 'number') {
     timeout = 0;
   }
-  if (timeout && (timeout = parseInt(timeout)) > 0 && !isNaN(timeout))
+  if (timeout && (timeout = parseInt(timeout, 10)) > 0 && !isNaN(timeout))
     procopt.timeout = timeout;
   return exec2(exports.convert.path, args, procopt, callback);
-}
+};
 exports.convert.path = 'convert';
 
 var resizeCall = function(t, callback) {
   var proc = exports.convert(t.args, t.opt.timeout, function(err, stdout, stderr) {
-    callback(err, stdout, stderr);
+    callback(err, stdout, stderr, t.meta);
   });
   if (t.opt.srcPath.match(/-$/)) {
     proc.stdin.setEncoding('binary');
@@ -202,55 +201,56 @@ var resizeCall = function(t, callback) {
     proc.stdin.end();
   }
   return proc;
-}
+};
 
 exports.resize = function(options, callback) {
   var t = exports.resizeArgs(options);
-  return resizeCall(t, callback)
-}
+  return resizeCall(t, callback);
+};
 
 exports.crop = function(options, callback) {
-  if (typeof options !== 'object') throw new Error('First argument must be an object!')
-  if(!options.srcPath) throw new Error("No srcPath defined!")
-  if(!options.dstPath) throw new Error("No dstPath defined!")
-  if(!options.height && !options.width) throw new Error("No width or height defined!")
+  if (typeof options !== 'object') throw new Error('First argument must be an object!');
+  if(!options.srcPath) throw new Error("No srcPath defined!");
+  if(!options.dstPath) throw new Error("No dstPath defined!");
+  if(!options.height && !options.width) throw new Error("No width or height defined!");
 
-  var gravity = options.gravity || "Center"
+  var gravity = options.gravity || "Center";
   
   exports.identify(options.srcPath, function(err, meta) {
-    if(err) throw new Error(err.message)
+    if(err) throw new Error(err.message);
 
     var t         = exports.resizeArgs(options),
         ignoreArg = false,
-        args      = []
+        args      = [];
 
     t.args.forEach(function(arg) {
       // ignoreArg is set when resize flag was found
-      if(!ignoreArg && (arg != '-resize')) args.push(arg)
+      if(!ignoreArg && (arg != '-resize')) args.push(arg);
       // found resize flag! ignore the next argument
-      if(arg == '-resize') ignoreArg = true
+      if(arg == '-resize') ignoreArg = true;
       // found the argument after the resize flag; ignore it and set crop options
       if((arg != "-resize") && ignoreArg) {
         var dSrc      = meta.width / meta.height,
             dDst      = t.opt.width / t.opt.height,
-            resizeTo  = ((dSrc < dDst) ? t.opt.width.toString() + "x" : "x" + t.opt.height.toString())
+            resizeTo  = ((dSrc < dDst) ? t.opt.width.toString() + "x" : "x" + t.opt.height.toString());
       
-        args.push("-resize")
-        args.push(resizeTo)
-        args.push("-gravity")
-        args.push(gravity)
-        args.push("-crop")
-        args.push(t.opt.width.toString() + "x" + t.opt.height.toString() + "+0+0")
-        args.push("+repage")
+        args.push("-resize");
+        args.push(resizeTo);
+        args.push("-gravity");
+        args.push(gravity);
+        args.push("-crop");
+        args.push(t.opt.width.toString() + "x" + t.opt.height.toString() + "+0+0");
+        args.push("+repage");
 
-        ignoreArg = false
+        ignoreArg = false;
       }
-    })
+    });
 
-    t.args = args
-    resizeCall(t, callback)
-  })
-}
+    t.args = args;
+    t.meta = meta;
+    resizeCall(t, callback);
+  });
+};
 
 exports.resizeArgs = function(options) {
   var opt = {
@@ -270,7 +270,7 @@ exports.resizeArgs = function(options) {
     customArgs: [],
     timeout: 0,
     only_shrink: true
-  }
+  };
 
   // check options
   if (typeof options !== 'object')
@@ -291,13 +291,14 @@ exports.resizeArgs = function(options) {
 
   // build args
   
-  var source = opt.srcPath.split(".")
+  var source = opt.srcPath.split("."),
+      args;
 
   if (source[source.length - 1].match(/psd/i) || source[source.length - 1].match(/pdf/i)) {
-    var args = [opt.srcPath+'[0]'];
+    args = [opt.srcPath+'[0]'];
   }
   else {
-    var args = [opt.srcPath];
+    args = [opt.srcPath];
   }
 
   if (opt.sharpening > 0) {
@@ -346,4 +347,4 @@ exports.resizeArgs = function(options) {
   args.push(opt.dstPath);
 
   return {opt:opt, args:args};
-}
+};
