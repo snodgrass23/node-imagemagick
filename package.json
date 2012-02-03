@@ -1,7 +1,7 @@
 {
   "name": "imagemagick",
   "description": "A wrapper around the imagemagick cli",
-  "version": "0.1.4",
+  "version": "0.1.2",
   "author": "Rasmus Andersson",
   "author": "Jim Snodgrass <jim@skookum.com>",
   "licenses": [{
